@@ -2,8 +2,8 @@ import classnames from 'classnames';
 import {Component, ReactText} from 'react';
 
 import {Checkbox} from '@client/ui';
+import {Checkmark, Clipboard, File as FileIcon} from '@client/ui/icons';
 import ConfigStore from '@client/stores/ConfigStore';
-import {File as FileIcon} from '@client/ui/icons';
 import TorrentActions from '@client/actions/TorrentActions';
 
 import type {TorrentContent, TorrentContentSelection, TorrentContentSelectionTree} from '@shared/types/TorrentContent';
@@ -20,11 +20,23 @@ interface DirectoryFilesProps {
   onItemSelect: (selection: TorrentContentSelection) => void;
 }
 
-class DirectoryFiles extends Component<DirectoryFilesProps> {
+interface DirectoryFilesStates {
+  copiedToClipboard: number[];
+}
+
+class DirectoryFiles extends Component<DirectoryFilesProps, DirectoryFilesStates> {
   static defaultProps = {
     path: [],
     items: {},
   };
+
+  constructor(props: DirectoryFilesProps) {
+    super(props);
+
+    this.state = {
+      copiedToClipboard: [],
+    };
+  }
 
   getCurrentPath(file: TorrentContent) {
     const {path} = this.props;
@@ -119,6 +131,22 @@ class DirectoryFiles extends Component<DirectoryFilesProps> {
                 priorityType="file"
               />
             </div>
+            {typeof navigator.clipboard?.writeText === 'function' && (
+              <button
+                className="file__detail file__detail--secondary file__detail--clipboard"
+                type="button"
+                onClick={() =>
+                  TorrentActions.getTorrentContentsDataPermalink(hash, [file.index]).then((url) =>
+                    navigator.clipboard.writeText(url).then(() => {
+                      this.setState((prevState) => ({
+                        copiedToClipboard: prevState.copiedToClipboard.concat([file.index]),
+                      }));
+                    }),
+                  )
+                }>
+                {this.state.copiedToClipboard.includes(file.index) ? <Checkmark /> : <Clipboard />}
+              </button>
+            )}
           </div>
         );
       });
